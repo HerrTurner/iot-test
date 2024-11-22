@@ -1,6 +1,7 @@
 # IoT Test Program
 
 El objetivo de este repositorio es dar un ejemplo de un cliente en Arduino usando ESP32 como tarjeta de desarrollo.
+El código de este repositorio está pensado como ejemplo y no se espera que se use como solución definitiva.
 
 ### Arduino
 
@@ -9,7 +10,7 @@ Sensores:
 - DHT11 -> sensor digital de temperatura y humedad (conectado al pin D2)
 - Sensor capacitivo -> sensor analógico que mide la humedad (conectado al pin A0)
 
->[!ATTENTION]
+>[!IMPORTANT]
 >No tener cables conectados al pin D2 al subir código
 
 
@@ -24,3 +25,5 @@ node test-api.js
 > [!NOTE]
 > No está pensada para producción ya que no está estructurada para escalabilidad y mantenimiento
 
+
+Última revisión: 22 Noviembre 2024
