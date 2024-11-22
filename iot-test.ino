@@ -18,7 +18,7 @@ const char* password = SECRET_PASSWORD;
 
 
 // API endpoint
-const char* endpointAPI = "http://your-api-endpoint.com/api/data";
+const char* endpointAPI = "http://192.168.1.69:3000/api/sensores";
 
 //Sensores
 //Temperatura y humedad
@@ -33,7 +33,7 @@ DHT dht11(DHT11_PIN, DHT11);
 unsigned long lastTime = 0;
 // Timer a 10 minutos 600000
 // Timer a 5 segundos 5000
-unsigned long timerDelay = 600000;
+unsigned long timerDelay = 5000;
 
 
 void setup() {
@@ -69,10 +69,14 @@ void loop() {
 
     //Construir payload en formato JSON
     //El segundo argumento de String() trunca los decimales a dos
-    String payload = "{\"temperature\": " + String(temperature, 2) + ", \"humidity\": " + String(humidity, 2) + ", \"waterLevel\": " + String(waterLevel, 2) + "}";
+    String payload = "{\"temperature\": "
+                     + String(temperature, 2) + ", \"humidity\": " + String(humidity, 2)
+                     + ", \"waterLevel\": "
+                     + String(waterLevel, 2)
+                     + "}";
 
+    Serial.println(payload);
 
-    // Serial.print(payload);
 
     // Revisar conexión WiFi
     if (WiFi.status() == WL_CONNECTED) {
@@ -84,8 +88,9 @@ void loop() {
       // Configurar headers
       http.addHeader("Content-Type", "application/json");
 
-      // Iniciar POST
+      // POST
       int httpResponseCode = http.POST(payload);
+
 
       // Manejo de errores
       if (httpResponseCode > 0) {
