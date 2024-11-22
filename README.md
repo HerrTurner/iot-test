@@ -10,6 +10,8 @@ Sensores:
 - DHT11 -> sensor digital de temperatura y humedad (conectado al pin D2)
 - Sensor capacitivo -> sensor analógico que mide la humedad (conectado al pin A0)
 
+En el archivo secrets.h se tiene que modificar con la configuración de red y las respectivas credenciales.
+
 >[!IMPORTANT]
 >No tener cables conectados al pin D2 al subir código
 
