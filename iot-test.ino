@@ -1,47 +1,149 @@
 /*
+IoT Test Sample
 
+Cliente en ESP32 que se comunica a través de HTTP a una API rest
+
+Jorge E. Turner
+21 Noviembre 2024
+*/
+
+#include "secrets.h"
 #include "DHT.h"
-#define DHT11_PIN 2
-#define TEMP A0
+#include <WiFi.h>
+#include <HTTPClient.h>
 
+// Configuración de red
+const char* ssid = SECRET_SSID;
+const char* password = SECRET_PASSWORD;
+
+
+// API endpoint
+const char* endpointAPI = "http://your-api-endpoint.com/api/data";
+
+//Sensores
+//Temperatura y humedad
+#define DHT11_PIN 2
 DHT dht11(DHT11_PIN, DHT11);
 
+//Nivel de agua
+#define WATER_PIN A0
+
+//Definir frecuencia de actualización
+//Tiempo en milisegundos
+unsigned long lastTime = 0;
+// Timer a 10 minutos 600000
+// Timer a 5 segundos 5000
+unsigned long timerDelay = 600000;
+
+
 void setup() {
-  Serial.begin(9600);
-  dht11.begin(); // initialize the sensor
+
+  //Iniciar velocidad de comunicación
+  //Para menor frecuencia usar 9600 baudios
+  Serial.begin(115200);
+
+  // Iniciar conexión WiFi
+  Serial.print("Conectándose...");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConectado a la red");
+  Serial.print("Dirección IP: ");
+  Serial.println(WiFi.localIP());  //Ip asignada al ESP32
+
+
+  dht11.begin();  // inicializar sensor de temperatura
 }
 
 void loop() {
-  // wait a few seconds between measurements.
-  delay(2000);
+  if ((millis() - lastTime) > timerDelay) {
 
-  // read humidity
-  float humi  = dht11.readHumidity();
-  // read temperature as Celsius
-  float tempC = dht11.readTemperature();
-  // read temperature as Fahrenheit
-  float tempF = dht11.readTemperature(true);
+    //Obtener valores de sensores
+    float temperature = getTemperature();
+    float humidity = getHumidity();
+    float waterLevel = getWaterLevel();
 
-  // check if any reads failed
-  if (isnan(humi) || isnan(tempC) || isnan(tempF)) {
-    Serial.println("Failed to read from DHT11 sensor!");
-  } else {
-    Serial.print("DHT11# Humidity: ");
-    Serial.print(humi);
-    Serial.print("%");
+    //Construir payload en formato JSON
+    //El segundo argumento de String() trunca los decimales a dos
+    String payload = "{\"temperature\": " + String(temperature, 2) + ", \"humidity\": " + String(humidity, 2) + ", \"waterLevel\": " + String(waterLevel, 2) + "}";
 
-    Serial.print("  |  "); 
 
-    Serial.print("Temperature: ");
-    Serial.print(tempC);
-    Serial.print("°C ~ ");
-    Serial.print(tempF);
-    Serial.println("°F");
+    // Serial.print(payload);
 
-    int val = analogRead(A0);  
-    Serial.println(val);
-    val = analogRead(TEMP)/4095.0*3.3;  
-    Serial.println(val);
-    delay(1000);
+    // Revisar conexión WiFi
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+
+      // Especificar endpoint
+      http.begin(endpointAPI);
+
+      // Configurar headers
+      http.addHeader("Content-Type", "application/json");
+
+      // Iniciar POST
+      int httpResponseCode = http.POST(payload);
+
+      // Manejo de errores
+      if (httpResponseCode > 0) {
+        Serial.println("Response Code: " + String(httpResponseCode));
+        String response = http.getString();
+        Serial.println("Respuesta: " + response);
+      } else {
+        Serial.println("Error enviando POST request");
+      }
+
+      http.end();  //Terminar conexión
+    } else {
+
+      Serial.println("Desconectado. Intentando reconectar...");
+      WiFi.reconnect();
+    }
+
+    lastTime = millis();
   }
+}
+
+float getTemperature() {
+
+  // temperatura en Celcius, para Fahrenheit pasar True como argumento
+  float temperature = dht11.readTemperature();
+
+  // Manejo de errores
+  if (isnan(temperature)) {
+    Serial.println("No se pudo leer la temperatura de DHT11");
+    return -1;
+  }
+
+  return temperature;
+}
+
+float getHumidity() {
+  float humidity = dht11.readHumidity();
+
+  // Manejo de errores
+  if (isnan(humidity)) {
+    Serial.println("No se pudo leer la humedad de DHT11");
+    return -1;
+  }
+
+  return humidity;
+}
+
+float getWaterLevel() {
+
+  int val = analogRead(WATER_PIN);
+
+  //Manejo de errores
+  if (isnan(val)) {
+    Serial.println("No se pudo leer la humedad de DHT11");
+    return -1;
+  }
+  // Conversion de voltage a valores numéricos
+  float nivel_agua = (val / 4095.0) * 3.3;  //ESP32 12-bit ADC a 3.3V
+
+  return nivel_agua;
 }
