@@ -1,3 +1,4 @@
+/*
 
 #include "DHT.h"
 #define DHT11_PIN 2
